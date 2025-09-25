@@ -8,6 +8,7 @@ torchaudio>=2.0.0
 transformers>=4.35.0
 tokenizers>=0.15.0
 huggingface-hub>=0.19.0
+accelerate>=0.20.0
 
 # HTTP server and client
 flask>=2.3.0

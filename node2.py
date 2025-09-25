@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Pipeline Parallel Node 2 for Llama 3.1 1B
+Pipeline Parallel Node 2
 Handles remaining transformer layers + generation
 """
 
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoConfig, LlamaForCausalLM
+from transformers import AutoTokenizer, AutoConfig, AutoModelForCausalLM
 import json
 import time
 import logging
@@ -17,7 +17,7 @@ from flask import Flask, request, jsonify
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class LlamaPipelineNode2:
+class PipelineNode2:
     def __init__(self, model_name="Qwen/Qwen2.5-1.5B-Instruct", split_layer=14):
         """
         Initialize Node 2 with second part of Llama model
@@ -41,7 +41,7 @@ class LlamaPipelineNode2:
         
         # Load full model to extract components
         logger.info("Loading full model (this may take a moment)...")
-        full_model = LlamaForCausalLM.from_pretrained(
+        full_model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float32,
             device_map="cpu",
@@ -90,7 +90,11 @@ class LlamaPipelineNode2:
                 output_attentions=False,
                 use_cache=False,
             )
-            hidden_states = layer_outputs[0]
+            # Handle different return formats
+            if isinstance(layer_outputs, tuple):
+                hidden_states = layer_outputs[0]
+            else:
+                hidden_states = layer_outputs
         
         # Final layer norm
         hidden_states = self.norm(hidden_states)
@@ -298,7 +302,7 @@ def initialize_node2(model_name, split_layer):
     """Initialize Node 2 in separate thread"""
     global node2_instance
     try:
-        node2_instance = LlamaPipelineNode2(model_name, split_layer)
+        node2_instance = PipelineNode2(model_name, split_layer)
         logger.info("Node 2 initialization complete")
     except Exception as e:
         logger.error(f"Failed to initialize Node 2: {e}")
@@ -309,7 +313,7 @@ def initialize_node2(model_name, split_layer):
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Llama Pipeline Parallel Node 2")
+    parser = argparse.ArgumentParser(description="Pipeline Parallel Node 2")
     parser.add_argument("--model", default="Qwen/Qwen2.5-1.5B-Instruct", help="Model name")
     parser.add_argument("--split-layer", type=int, default=14, help="Layer where split occurs")
     parser.add_argument("--port", type=int, default=5002, help="Port for Node 2 API")

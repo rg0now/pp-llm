@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Pipeline Parallel Node 1 for Llama 3.1 1B
+Pipeline Parallel Node 1
 Handles embedding + first N transformer layers
 Provides OpenAI-compatible API
 """
 
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoConfig, LlamaForCausalLM
+from transformers import AutoTokenizer, AutoConfig, AutoModelForCausalLM
 import requests
 import json
 import time
@@ -19,7 +19,7 @@ from flask import Flask, request, jsonify
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class LlamaPipelineNode1:
+class PipelineNode1:
     def __init__(self, model_name="Qwen/Qwen2.5-1.5B-Instruct", split_layer=14, node2_url="http://localhost:5002"):
         """
         Initialize Node 1 with first part of Llama model
@@ -45,7 +45,7 @@ class LlamaPipelineNode1:
         
         # Load full model to extract components
         logger.info("Loading full model (this may take a moment)...")
-        full_model = LlamaForCausalLM.from_pretrained(
+        full_model = AutoModelForCausalLM.from_pretrained(
             model_name, 
             torch_dtype=torch.float32,
             device_map="cpu",
@@ -121,7 +121,11 @@ class LlamaPipelineNode1:
                 output_attentions=False,
                 use_cache=False,
             )
-            hidden_states = layer_outputs[0]
+            # Handle different return formats
+            if isinstance(layer_outputs, tuple):
+                hidden_states = layer_outputs[0]
+            else:
+                hidden_states = layer_outputs
         
         return {
             "hidden_states": hidden_states,
@@ -306,7 +310,7 @@ def initialize_node1(model_name, split_layer, node2_url):
     """Initialize Node 1 in separate thread"""
     global node1_instance
     try:
-        node1_instance = LlamaPipelineNode1(model_name, split_layer, node2_url)
+        node1_instance = PipelineNode1(model_name, split_layer, node2_url)
         logger.info("Node 1 initialization complete")
     except Exception as e:
         logger.error(f"Failed to initialize Node 1: {e}")
@@ -315,7 +319,7 @@ def initialize_node1(model_name, split_layer, node2_url):
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Llama Pipeline Parallel Node 1")
+    parser = argparse.ArgumentParser(description="Pipeline Parallel Node 1")
     parser.add_argument("--model", default="Qwen/Qwen2.5-1.5B-Instruct", help="Model name")
     parser.add_argument("--split-layer", type=int, default=14, help="Layer to split at") 
     parser.add_argument("--node2-url", default="http://localhost:5002", help="Node 2 URL")
