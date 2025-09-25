@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class LlamaPipelineNode1:
-    def __init__(self, model_name="meta-llama/Llama-3.1-1B", split_layer=16, node2_url="http://localhost:5002"):
+    def __init__(self, model_name="Qwen/Qwen2.5-1.5B-Instruct", split_layer=14, node2_url="http://localhost:5002"):
         """
         Initialize Node 1 with first part of Llama model
         
@@ -316,8 +316,8 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Llama Pipeline Parallel Node 1")
-    parser.add_argument("--model", default="meta-llama/Llama-3.1-1B", help="Llama model name")
-    parser.add_argument("--split-layer", type=int, default=16, help="Layer to split at") 
+    parser.add_argument("--model", default="Qwen/Qwen2.5-1.5B-Instruct", help="Model name")
+    parser.add_argument("--split-layer", type=int, default=14, help="Layer to split at") 
     parser.add_argument("--node2-url", default="http://localhost:5002", help="Node 2 URL")
     parser.add_argument("--port", type=int, default=5001, help="Port for Node 1 API")
     parser.add_argument("--host", default="0.0.0.0", help="Host for Node 1 API")

@@ -1,7 +1,8 @@
-# CPU-only PyTorch (adjust URL for your system if needed)
-# For Linux/macOS:
-torch>=2.0.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-# For Windows, use: torch>=2.0.0 --index-url https://download.pytorch.org/whl/cpu
+# CPU-only PyTorch
+# Install with: pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
 
 # Core ML libraries
 transformers>=4.35.0
@@ -15,9 +16,6 @@ requests>=2.31.0
 # Numerical computing
 numpy>=1.24.0
 safetensors>=0.4.0
-
-# CLI tools
-huggingface-cli
 
 # Optional: Better performance on CPU
 # Uncomment if you have issues with default BLAS

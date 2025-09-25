@@ -1,6 +1,18 @@
-# Pipeline Parallel Llama 3.1 1B - CPU Only
+# Pipeline Parallel Qwen 2.5 1.5B - CPU Only
 
-A simple implementation of pipeline parallelism for Llama 3.1 1B using CPU-only inference. Splits the model across two nodes connected via HTTP REST API.
+A simple implementation of pipeline parallelism for Qwen 2.5 1.5B using CPU-only inference. Splits the model across two nodes connected via HTTP REST API.
+
+```
+[Client Request] 
+       ↓
+[Node 1: Embedding + Layers 0-15] 
+       ↓ HTTP JSON
+[Node 2: Layers 16-31 + Generation]
+       ↓
+[Generated Response]
+```
+
+Architecture overview:
 - **Node 1**: Token embedding, position embedding, first 16 transformer layers
 - **Node 2**: Remaining 16 layers, layer normalization, language modeling head, text generation
 
@@ -8,41 +20,38 @@ A simple implementation of pipeline parallelism for Llama 3.1 1B using CPU-only 
 
 ### 1. Setup Environment
 ```bash
-# Create Python virtual environment
 python3 -m venv llama_pipeline_env
-source llama_pipeline_env/bin/activate
+source llama_pipeline_env/bin/activate  # On Windows: llama_pipeline_env\Scripts\activate
 
-# Install dependencies
+# Install PyTorch CPU version first
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining dependencies
 pip install -r requirements.txt
-```
 
-### 2. Accept Llama Model License
-You need to request access to Llama models on HuggingFace:
-1. Go to https://huggingface.co/meta-llama/Llama-3.1-1B
-2. Click "Request access" and accept the license
-3. Get your HuggingFace token: https://huggingface.co/settings/tokens
-
-```bash
-# Login to HuggingFace (one-time setup)
+# Log in to HF
 huggingface-cli login
 # Enter your token when prompted
 ```
 
-### 3. Run Pipeline Parallel Inference
+### 2. Run Pipeline Parallel Inference
 
 **Terminal 1 - Start Node 2 (Final layers + Generation):**
 ```bash
-source llama_pipeline_env/bin/activate
-python node2.py --model meta-llama/Llama-3.1-1B --split-layer 16
+source llama_pipeline_env/bin/activate  # IMPORTANT: Always activate first!
+python node2.py --model Qwen/Qwen2.5-1.5B-Instruct --split-layer 14
 ```
 
 **Terminal 2 - Start Node 1 (First layers + Embeddings):**
 ```bash
-source llama_pipeline_env/bin/activate
-python node1.py --model meta-llama/Llama-3.1-1B --split-layer 16
+source llama_pipeline_env/bin/activate  # IMPORTANT: Always activate first!
+python node1.py --model Qwen/Qwen2.5-1.5B-Instruct --split-layer 14
 ```
 
-### 4. Test
+## Usage
+
+OpenAI-Compatible API:
+
 ```bash
 # Single completion
 curl -X POST http://localhost:5001/v1/completions \
@@ -52,6 +61,17 @@ curl -X POST http://localhost:5001/v1/completions \
     "max_tokens": 100,
     "temperature": 0.7
   }'
+```
+
+## Configuration
+
+### Performance Tuning
+```bash
+# Set CPU threads for better performance
+export OMP_NUM_THREADS=4  # Adjust to your CPU core count
+
+# Run with optimized settings
+python node1.py --model meta-llama/Llama-3.1-1B --split-layer 16 --host 0.0.0.0
 ```
 
 ## Multi-Machine Setup
